@@ -1,0 +1,208 @@
+openapi: 3.1.0
+info:
+  title: Gentle Activity & Wellness API
+  version: 1.0.0
+  description: Standalone wellness-only activity API. Not medical advice.
+servers:
+  - url: http://localhost:8000
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+  /api/v1/register:
+    post:
+      summary: Register demo user and profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [display_name]
+              properties:
+                display_name: { type: string }
+                email: { type: string, nullable: true }
+                relationship_label: { type: string, nullable: true }
+                tenant_id: { type: string, format: uuid, nullable: true }
+      responses:
+        "200":
+          description: Registered
+  /api/v1/me:
+    get:
+      summary: Current profile summary
+      parameters: &scopeHeaders
+        - in: header
+          name: X-User-Id
+          required: true
+          schema: { type: string, format: uuid }
+        - in: header
+          name: X-Profile-Id
+          required: true
+          schema: { type: string, format: uuid }
+        - in: header
+          name: X-Tenant-Id
+          required: false
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Profile summary
+  /api/v1/sessions:
+    post:
+      summary: Log gentle wellness session
+      parameters: *scopeHeaders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_type, duration_minutes, started_at]
+              properties:
+                session_type:
+                  type: string
+                  enum: [walking, light_stretching, gentle_mobility, breathing_walk]
+                duration_minutes: { type: integer, minimum: 1 }
+                started_at: { type: string, format: date-time }
+                notes: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Session created
+        "422":
+          description: Invalid session type
+    get:
+      summary: List sessions
+      parameters:
+        - *scopeHeaders
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Session list
+  /api/v1/steps/{date}:
+    put:
+      summary: Upsert daily steps
+      parameters:
+        - *scopeHeaders
+        - in: path
+          name: date
+          required: true
+          schema: { type: string, format: date }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [step_count]
+              properties:
+                step_count: { type: integer, minimum: 0 }
+      responses:
+        "200":
+          description: Steps updated
+  /api/v1/steps:
+    get:
+      summary: List steps in range
+      parameters:
+        - *scopeHeaders
+        - in: query
+          name: from
+          required: true
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Step records
+  /api/v1/goals:
+    put:
+      summary: Set daily goals
+      parameters: *scopeHeaders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                daily_step_target: { type: integer }
+                daily_active_minutes_target: { type: integer }
+      responses:
+        "200":
+          description: Goals saved
+    get:
+      summary: Get goals
+      parameters: *scopeHeaders
+      responses:
+        "200":
+          description: Goals
+  /api/v1/reminders:
+    put:
+      summary: Save reminder settings
+      parameters: *scopeHeaders
+      responses:
+        "200":
+          description: Saved
+    get:
+      summary: Get reminder settings
+      parameters: *scopeHeaders
+      responses:
+        "200":
+          description: Reminders
+  /api/v1/vitals/{date}:
+    put:
+      summary: Upsert vitals
+      parameters:
+        - *scopeHeaders
+        - in: path
+          name: date
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Vitals saved with needs_review flag
+    get:
+      summary: Get vitals for date
+      parameters:
+        - *scopeHeaders
+        - in: path
+          name: date
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Vitals
+  /api/v1/points/balance:
+    get:
+      summary: Points balance
+      parameters: *scopeHeaders
+      responses:
+        "200":
+          description: Balance
+  /api/v1/points/ledger:
+    get:
+      summary: Points ledger
+      parameters:
+        - *scopeHeaders
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: Ledger entries
+  /api/v1/history:
+    get:
+      summary: Unified history
+      parameters:
+        - *scopeHeaders
+        - in: query
+          name: days
+          schema: { type: integer, default: 14 }
+      responses:
+        "200":
+          description: Timeline

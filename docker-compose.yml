@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: gentle-activity-db
+    environment:
+      POSTGRES_USER: gentle
+      POSTGRES_PASSWORD: gentle
+      POSTGRES_DB: gentle_activity
+    ports:
+      - "5432:5432"
+    volumes:
+      - gentle_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gentle -d gentle_activity"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  gentle_pg_data:
